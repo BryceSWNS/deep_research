@@ -66,7 +66,7 @@ async def tavily_search(
         config=config
     )
     
-    # Step 2: Deduplicate results by URL to avoid processing the same content multiple times
+    # Step 2: 基于URL去重搜索结果，避免重复处理相同内容
     unique_results = {}
     for response in search_results:
         for result in response['results']:
@@ -74,7 +74,7 @@ async def tavily_search(
             if url not in unique_results:
                 unique_results[url] = {**result, "query": response['query']}
     
-    # Step 3: Set up the summarization model with configuration
+    # Step 3: 根据配置初始化摘要模型
     configurable = Configuration.from_runnable_config(config)
     
     # Character limit to stay within model token limits (configurable)

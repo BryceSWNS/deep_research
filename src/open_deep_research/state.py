@@ -1,4 +1,4 @@
-"""Graph state definitions and data structures for the Deep Research agent."""
+"""Graph state 定义 and 数据结构 for the Deep Research agent."""
 
 import operator
 from typing import Annotated, Optional
@@ -13,10 +13,10 @@ from typing_extensions import TypedDict
 # Structured Outputs
 ###################
 class ConductResearch(BaseModel):
-    """Call this tool to conduct research on a specific topic."""
+    """调用该 tool 以对特定主题开展研究"""
     research_topic: str = Field(
-        description="The topic to research. Should be a single topic, and should be described in high detail (at least a paragraph).",
-    )
+            description="需要研究的主题。应为单一主题，并且应以高度详细的方式进行描述（至少一整段）。",
+        )
 
 class ResearchComplete(BaseModel):
     """Call this tool to indicate that the research is complete."""
