@@ -1,33 +1,33 @@
-"""Main LangGraph implementation for the Deep Research agent."""
+"""Deep Research Agent 的主 LangGraph 实现"""
 
 import asyncio
 from typing import Literal
 
-from langchain.chat_models import init_chat_model
+from langchain.chat_models import init_chat_model # 初始化聊天模型
 from langchain_core.messages import (
-    AIMessage,
-    HumanMessage,
-    SystemMessage,
-    ToolMessage,
-    filter_messages,
-    get_buffer_string,
+    AIMessage, 
+    HumanMessage, 
+    SystemMessage, 
+    ToolMessage, 
+    filter_messages, # 过滤消息，只保留 HumanMessage 和 AIMessage
+    get_buffer_string, # 将消息转换为字符串
 )
-from langchain_core.runnables import RunnableConfig
+from langchain_core.runnables import RunnableConfig # 解释：运行配置
 from langgraph.graph import END, START, StateGraph
-from langgraph.types import Command
+from langgraph.types import Command # 解释：命令
 
 from open_deep_research.configuration import (
     Configuration,
-)
+) 
 from open_deep_research.prompts import (
-    clarify_with_user_instructions,
-    compress_research_simple_human_message,
-    compress_research_system_prompt,
-    final_report_generation_prompt,
-    lead_researcher_prompt,
-    research_system_prompt,
-    transform_messages_into_research_topic_prompt,
-)
+    clarify_with_user_instructions, # 澄清用户指令
+    compress_research_simple_human_message, # 压缩研究 simple_human_message
+    compress_research_system_prompt, # 压缩研究 system_prompt
+    final_report_generation_prompt, # 最终报告生成 prompt
+    lead_researcher_prompt, # 领导研究员 prompt
+    research_system_prompt, # 研究员system_prompt
+    transform_messages_into_research_topic_prompt, # 将 messages 转换为研究主题
+) 
 from open_deep_research.state import (
     AgentInputState,
     AgentState,
@@ -58,10 +58,10 @@ configurable_model = init_chat_model(
 )
 
 async def clarify_with_user(state: AgentState, config: RunnableConfig) -> Command[Literal["write_research_brief", "__end__"]]:
-    """Analyze user messages and ask clarifying questions if the research scope is unclear.
+    """分析用户消息，并在研究范围不明确时提出澄清问题.
     
-    This function determines whether the user's request needs clarification before proceeding
-    with research. If clarification is disabled or not needed, it proceeds directly to research.
+    该函数用于在开展研究之前，判断用户的请求是否需要进一步澄清。
+    如果未启用澄清机制或无需澄清，则直接进入研究流程。
     
     Args:
         state: Current agent state containing user messages

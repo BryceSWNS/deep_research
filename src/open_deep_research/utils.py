@@ -1,4 +1,4 @@
-"""Utility functions and helpers for the Deep Research agent."""
+"""工具函数与辅助函数 for the Deep Research agent."""
 
 import asyncio
 import logging
@@ -34,7 +34,7 @@ from open_deep_research.prompts import summarize_webpage_prompt
 from open_deep_research.state import ResearchComplete, Summary
 
 ##########################
-# Tavily Search Tool Utils
+# Tavily 搜索工具辅助函数
 ##########################
 TAVILY_SEARCH_DESCRIPTION = (
     "A search engine optimized for comprehensive, accurate, and trusted results. "
@@ -42,23 +42,22 @@ TAVILY_SEARCH_DESCRIPTION = (
 )
 @tool(description=TAVILY_SEARCH_DESCRIPTION)
 async def tavily_search(
-    queries: List[str],
-    max_results: Annotated[int, InjectedToolArg] = 5,
-    topic: Annotated[Literal["general", "news", "finance"], InjectedToolArg] = "general",
-    config: RunnableConfig = None
+    queries: List[str], 
+    max_results: Annotated[int, InjectedToolArg] = 5, 
+    topic: Annotated[Literal["general", "news", "finance"], InjectedToolArg] = "general", 
 ) -> str:
-    """Fetch and summarize search results from Tavily search API.
+    """从 Tavily search API 抓取并总结搜索结果.
 
     Args:
-        queries: List of search queries to execute
-        max_results: Maximum number of results to return per query
-        topic: Topic filter for search results (general, news, or finance)
-        config: Runtime configuration for API keys and model settings
+        queries:要执行的搜索查询列表
+        max_results: 每个查询返回的最大结果数
+        topic: 搜索结果的主题过滤器 (general, news, or finance)
+        config: 包含 API 密钥和模型设置的运行配置
 
     Returns:
-        Formatted string containing summarized search results
+        包含总结后的搜索结果的格式化字符串 
     """
-    # Step 1: Execute search queries asynchronously
+    # Step 1: 异步执行搜索查询
     search_results = await tavily_search_async(
         queries,
         max_results=max_results,
@@ -890,7 +889,7 @@ def get_config_value(value):
         return value.value
 
 def get_api_key_for_model(model_name: str, config: RunnableConfig):
-    """Get API key for a specific model from environment or config."""
+    """从环境变量或配置文件中获取某个特定模型的 API Key"""
     should_get_from_config = os.getenv("GET_API_KEYS_FROM_CONFIG", "false")
     model_name = model_name.lower()
     if should_get_from_config.lower() == "true":
@@ -901,6 +900,8 @@ def get_api_key_for_model(model_name: str, config: RunnableConfig):
             return api_keys.get("OPENAI_API_KEY")
         elif model_name.startswith("anthropic:"):
             return api_keys.get("ANTHROPIC_API_KEY")
+        elif model_name.startswith("deepseek:"):
+            return api_keys.get("DEEPSEEK_API_KEY")
         elif model_name.startswith("google"):
             return api_keys.get("GOOGLE_API_KEY")
         return None
@@ -909,12 +910,14 @@ def get_api_key_for_model(model_name: str, config: RunnableConfig):
             return os.getenv("OPENAI_API_KEY")
         elif model_name.startswith("anthropic:"):
             return os.getenv("ANTHROPIC_API_KEY")
+        elif model_name.startswith("deepseek:"):
+            return os.getenv("DEEPSEEK_API_KEY")
         elif model_name.startswith("google"):
             return os.getenv("GOOGLE_API_KEY")
         return None
 
 def get_tavily_api_key(config: RunnableConfig):
-    """Get Tavily API key from environment or config."""
+    """从环境变量或配置文件中获取 Tavily 的 API Key."""
     should_get_from_config = os.getenv("GET_API_KEYS_FROM_CONFIG", "false")
     if should_get_from_config.lower() == "true":
         api_keys = config.get("configurable", {}).get("apiKeys", {})
