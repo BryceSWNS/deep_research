@@ -2,18 +2,6 @@
 
 Deep research 是一个简单、可配置的深度研究 Agent，能够兼容多种模型提供方、搜索工具以及 MCP 服务器。其性能与许多主流深度研究 Agent 相当。 ([see Deep Research Bench leaderboard](https://huggingface.co/spaces/Ayanami0730/DeepResearch-Leaderboard)).
 
-### 🔥 Recent Updates
-
-**August 14, 2025**: See our free course [here](https://academy.langchain.com/courses/deep-research-with-langgraph) (and course repo [here](https://github.com/langchain-ai/deep_research_from_scratch)) on building open deep research.
-
-**August 7, 2025**: Added GPT-5 and updated the Deep Research Bench evaluation w/ GPT-5 results.
-
-**August 2, 2025**: Achieved #6 ranking on the [Deep Research Bench Leaderboard](https://huggingface.co/spaces/Ayanami0730/DeepResearch-Leaderboard) with an overall score of 0.4344. 
-
-**July 30, 2025**: Read about the evolution from our original implementations to the current version in our [blog post](https://rlancemartin.github.io/2025/07/30/bitter_lesson/).
-
-**July 16, 2025**: Read more in our [blog](https://blog.langchain.com/open-deep-research/) and watch our [video](https://www.youtube.com/watch?v=agGiWUpxkhg) for a quick overview.
-
 ### 🚀 Quickstart
 
 1. Clone the repository and activate a virtual environment:
@@ -32,7 +20,7 @@ uv venv # uv 管理
 source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 ```
 
-1. Install dependencies:
+2. 安装依赖:
 
 ```bash
 uv sync
@@ -40,13 +28,13 @@ uv sync
 uv pip install -r pyproject.toml  # 若前面使用 conda 则该步骤使用
 ```
 
-1. Set up your `.env` file to customize the environment variables (for model selection, search tools, and other configuration settings):
+3. Set up your `.env` file to customize the environment variables (for model selection, search tools, and other configuration settings):
 
 ```bash
 cp .env.example .env
 ```
 
-1. Launch agent with the LangGraph server locally:
+4. Launch agent with the LangGraph server locally:
 
 ```bash
 # Install dependencies and start the LangGraph server
@@ -108,16 +96,7 @@ python tests/extract_langsmith_data.py --project-name "YOUR_EXPERIMENT_NAME" --m
 ```
 
 This creates `tests/expt_results/deep_research_bench_model-name.jsonl` with the required format. Move the generated JSONL file to a local clone of the Deep Research Bench repository and follow their [Quick Start guide](https://github.com/Ayanami0730/deep_research_bench?tab=readme-ov-file#quick-start) for evaluation submission.
-
-#### 结果
-
-
-| Name                           | Commit                                                                                                                  | Summarization       | Research                           | Compression    | Total Cost | Total Tokens | RACE Score | Experiment                                                                                                                                                                                                |
-| ------------------------------ | ----------------------------------------------------------------------------------------------------------------------- | ------------------- | ---------------------------------- | -------------- | ---------- | ------------ | ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| GPT-5                          | [ca3951d](https://github.com/langchain-ai/open_deep_research/pull/168/commits)                                          | openai:gpt-4.1-mini | openai:gpt-5                       | openai:gpt-4.1 |            | 204,640,896  | 0.4943     | [Link](https://smith.langchain.com/o/ebbaf2eb-769b-4505-aca2-d11de10372a4/datasets/6e4766ca-613c-4bda-8bde-f64f0422bbf3/compare?selectedSessions=4d5941c8-69ce-4f3d-8b3e-e3c99dfbd4cc&baseline=undefined) |
-| Defaults                       | [6532a41](https://github.com/langchain-ai/open_deep_research/commit/6532a4176a93cc9bb2102b3d825dcefa560c85d9)           | openai:gpt-4.1-mini | openai:gpt-4.1                     | openai:gpt-4.1 | $45.98     | 58,015,332   | 0.4309     | [Link](https://smith.langchain.com/o/ebbaf2eb-769b-4505-aca2-d11de10372a4/datasets/6e4766ca-6[…]ons=cf4355d7-6347-47e2-a774-484f290e79bc&baseline=undefined)                                              |
-| Claude Sonnet 4                | [f877ea9](https://github.com/langchain-ai/open_deep_research/pull/163/commits/f877ea93641680879c420ea991e998b47aab9bcc) | openai:gpt-4.1-mini | anthropic:claude-sonnet-4-20250514 | openai:gpt-4.1 | $187.09    | 138,917,050  | 0.4401     | [Link](https://smith.langchain.com/o/ebbaf2eb-769b-4505-aca2-d11de10372a4/datasets/6e4766ca-6[…]ons=04f6002d-6080-4759-bcf5-9a52e57449ea&baseline=undefined)                                              |
-| Deep Research Bench Submission | [c0a160b](https://github.com/langchain-ai/open_deep_research/commit/c0a160b57a9b5ecd4b8217c3811a14d8eff97f72)           | openai:gpt-4.1-nano | openai:gpt-4.1                     | openai:gpt-4.1 | $87.83     | 207,005,549  | 0.4344     | [Link](https://smith.langchain.com/o/ebbaf2eb-769b-4505-aca2-d11de10372a4/datasets/6e4766ca-6[…]ons=e6647f74-ad2f-4cb9-887e-acb38b5f73c0&baseline=undefined)                                              |
+                                           |
 
 
 ### 🚀 部署与使用

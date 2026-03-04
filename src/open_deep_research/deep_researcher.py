@@ -64,19 +64,21 @@ async def clarify_with_user(state: AgentState, config: RunnableConfig) -> Comman
     如果未启用澄清机制或无需澄清，则直接进入研究流程。
     
     Args:
-        state: Current agent state containing user messages
-        config: Runtime configuration with model settings and preferences
+        state: 当前 agent state，包含 user messages 
+        config: Runtime 配置，包含模型设置和偏好 
         
     Returns:
-        Command to either end with a clarifying question or proceed to research brief
+      返回一个路由命令：
+      - 若需要澄清，跳转到 `__end__` 并向用户返回澄清问题；
+      - 若无需澄清，跳转到 `write_research_brief` 继续研究流程（附带确认消息）。
     """
-    # Step 1: Check if clarification is enabled in configuration
+    # Step 1: 检查配置中是否启用了 clarification（澄清） 功能
     configurable = Configuration.from_runnable_config(config)
     if not configurable.allow_clarification:
-        # Skip clarification step and proceed directly to research
+        # 跳过澄清步骤，直接进入研究流程
         return Command(goto="write_research_brief")
     
-    # Step 2: Prepare the model for structured clarification analysis
+    # Step 2: 构建“澄清判定”专用模型（结构化输出 + 自动重试 + 运行配置）
     messages = state["messages"]
     model_config = {
         "model": configurable.research_model,
@@ -85,30 +87,30 @@ async def clarify_with_user(state: AgentState, config: RunnableConfig) -> Comman
         "tags": ["langsmith:nostream"]
     }
     
-    # Configure model with structured output and retry logic
+    # 配置用于澄清判断的模型：structured output + 自动重试
     clarification_model = (
         configurable_model
-        .with_structured_output(ClarifyWithUser)
+        .with_structured_output(ClarifyWithUser) 
         .with_retry(stop_after_attempt=configurable.max_structured_output_retries)
         .with_config(model_config)
     )
     
-    # Step 3: Analyze whether clarification is needed
+    # Step 3: 分析是否需要澄清
     prompt_content = clarify_with_user_instructions.format(
         messages=get_buffer_string(messages), 
         date=get_today_str()
     )
     response = await clarification_model.ainvoke([HumanMessage(content=prompt_content)])
     
-    # Step 4: Route based on clarification analysis
+    # Step 4: 根据模型判断结果，决定“先问清楚再停”还是“直接进入研究”
     if response.need_clarification:
-        # End with clarifying question for user
+        # 需要澄清时：往 messages 追加一条 AI 的澄清问题
         return Command(
             goto=END, 
             update={"messages": [AIMessage(content=response.question)]}
         )
     else:
-        # Proceed to research with verification message
+        # 无需澄清时：往 messages 追加一条 AI 的确认消息
         return Command(
             goto="write_research_brief", 
             update={"messages": [AIMessage(content=response.verification)]}
@@ -116,20 +118,19 @@ async def clarify_with_user(state: AgentState, config: RunnableConfig) -> Comman
 
 
 async def write_research_brief(state: AgentState, config: RunnableConfig) -> Command[Literal["research_supervisor"]]:
-    """Transform user messages into a structured research brief and initialize supervisor.
+    """将 user messages 转换为结构化的 research brief，并初始化 supervisor
     
-    This function analyzes the user's messages and generates a focused research brief
-    that will guide the research supervisor. It also sets up the initial supervisor
-    context with appropriate prompts and instructions.
+       该函数会分析 user messages，生成一个聚焦且可执行的 research brief，用于指导 research supervisor 的后续调度与研究
+       与此同时，它还会设置 supervisor 的初始上下文（包括 prompts 和 instructions）。
     
     Args:
-        state: Current agent state containing user messages
-        config: Runtime configuration with model settings
+        state: 当前 agent state（包含 user messages）
+        config: Runtime 配置（主要是模型相关设置）
         
     Returns:
-        Command to proceed to research supervisor with initialized context
+        一个用于跳转到 research supervisor 的 Command (携带已初始化好的 supervisor context)
     """
-    # Step 1: Set up the research model for structured output
+    # Step 1: 配置一个支持 structured output 的 research model
     configurable = Configuration.from_runnable_config(config)
     research_model_config = {
         "model": configurable.research_model,
@@ -138,7 +139,7 @@ async def write_research_brief(state: AgentState, config: RunnableConfig) -> Com
         "tags": ["langsmith:nostream"]
     }
     
-    # Configure model for structured research question generation
+    # 配置 model，生成 structured research question
     research_model = (
         configurable_model
         .with_structured_output(ResearchQuestion)
