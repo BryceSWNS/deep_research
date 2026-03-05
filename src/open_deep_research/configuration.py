@@ -2,7 +2,7 @@
 
 import os
 from enum import Enum
-from typing import Any, List, Optional
+from typing import Any, Dict, List, Optional
 
 from langchain_core.runnables import RunnableConfig
 from pydantic import BaseModel, Field
@@ -17,7 +17,7 @@ class SearchAPI(Enum):
     NONE = "none"
 
 class MCPConfig(BaseModel):
-    """MCP（Model Context Protocol）服务器配置，用于接入外部工具系统或插件生态"""
+    """单个 MCP（Model Context Protocol）server 的配置。"""
     
     url: Optional[str] = Field(
         default=None,
@@ -34,6 +34,11 @@ class MCPConfig(BaseModel):
         optional=True,
     )
     """MCP 服务器是否需要认证"""
+    headers: Optional[Dict[str, str]] = Field(
+        default=None,
+        optional=True,
+    )
+    """访问 MCP server 时附带的自定义请求头（例如 Authorization）"""
 
 class Configuration(BaseModel):
     """Deep Research Agent 的主配置类"""
@@ -210,19 +215,26 @@ class Configuration(BaseModel):
             }
         }
     )
-    # MCP 服务器配置
-    mcp_config: Optional[MCPConfig] = Field(
-        default=None,
+    # MCP 配置（支持多 server）
+    mcp_servers: Optional[List[MCPConfig]] = Field(
+        default_factory=lambda: [
+            MCPConfig(
+                url="https://api.githubcopilot.com",
+                tools=["search_repositories", "get_file_contents"],
+                auth_required=False,
+                headers={"Authorization": f"Bearer {os.getenv('GITHUB_TOKEN', '')}"},
+            )
+        ],
         optional=True,
         metadata={
             "x_oap_ui_config": {
                 "type": "mcp",
-                "description": "MCP 服务器 configuration"
+                "description": "MCP servers 配置（支持多个）。"
             }
         }
     )
     mcp_prompt: Optional[str] = Field(
-        default=None,
+        default="你可以按需使用可用的 MCP tools 补充信息来源，并与其他工具结果综合分析。",
         optional=True,
         metadata={
             "x_oap_ui_config": {

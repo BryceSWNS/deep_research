@@ -4,7 +4,7 @@ import asyncio
 import logging
 import os
 import warnings
-from datetime import datetime, timedelta, timezone
+from datetime import datetime
 from typing import Annotated, Any, Dict, List, Literal, Optional
 
 import aiohttp
@@ -25,11 +25,10 @@ from langchain_core.tools import (
     tool,
 )
 from langchain_mcp_adapters.client import MultiServerMCPClient
-from langgraph.config import get_store
 from mcp import McpError
 from tavily import AsyncTavilyClient
 
-from open_deep_research.configuration import Configuration, SearchAPI
+from open_deep_research.configuration import Configuration, MCPConfig, SearchAPI
 from open_deep_research.prompts import summarize_webpage_prompt
 from open_deep_research.state import ResearchComplete, Summary
 
@@ -290,98 +289,6 @@ async def get_mcp_access_token(
     
     return None
 
-async def get_tokens(config: RunnableConfig):
-    """读取已存储 token，并校验是否过期。
-    
-    Args:
-        config: 运行时配置（包含 thread/user 标识）
-        
-    Returns:
-        token 有效则返回 token 字典，否则返回 None
-    """
-    store = get_store()
-    
-    # 从 config 提取必要标识
-    thread_id = config.get("configurable", {}).get("thread_id")
-    if not thread_id:
-        return None
-        
-    user_id = config.get("metadata", {}).get("owner")
-    if not user_id:
-        return None
-    
-    # 读取已存 token
-    tokens = await store.aget((user_id, "tokens"), "data")
-    if not tokens:
-        return None
-    
-    # 校验 token 是否过期
-    expires_in = tokens.value.get("expires_in")  # 距离过期的秒数
-    created_at = tokens.created_at  # token 创建时间
-    current_time = datetime.now(timezone.utc)
-    expiration_time = created_at + timedelta(seconds=expires_in)
-    
-    if current_time > expiration_time:
-        # token 已过期，清理后返回 None
-        await store.adelete((user_id, "tokens"), "data")
-        return None
-
-    return tokens.value
-
-async def set_tokens(config: RunnableConfig, tokens: dict[str, Any]):
-    """将认证 token 写入配置存储。
-    
-    Args:
-        config: 运行时配置（包含 thread/user 标识）
-        tokens: 待存储的 token 字典
-    """
-    store = get_store()
-    
-    # 从 config 提取必要标识
-    thread_id = config.get("configurable", {}).get("thread_id")
-    if not thread_id:
-        return
-        
-    user_id = config.get("metadata", {}).get("owner")
-    if not user_id:
-        return
-    
-    # 写入 token
-    await store.aput((user_id, "tokens"), "data", tokens)
-
-async def fetch_tokens(config: RunnableConfig) -> dict[str, Any]:
-    """获取并刷新 MCP token（必要时重新申请）。
-    
-    Args:
-        config: 含认证信息的运行时配置
-        
-    Returns:
-        返回有效 token 字典；无法获取时返回 None
-    """
-    # 先尝试读取现有有效 token
-    current_tokens = await get_tokens(config)
-    if current_tokens:
-        return current_tokens
-    
-    # 提取 Supabase token，用于新一轮 token exchange
-    supabase_token = config.get("configurable", {}).get("x-supabase-access-token")
-    if not supabase_token:
-        return None
-    
-    # 提取 MCP 配置
-    mcp_config = config.get("configurable", {}).get("mcp_config")
-    if not mcp_config or not mcp_config.get("url"):
-        return None
-    
-    # 使用 Supabase token 换取 MCP token
-    mcp_tokens = await get_mcp_access_token(supabase_token, mcp_config.get("url"))
-    if not mcp_tokens:
-        return None
-
-    # 存储新 token 并返回
-    await set_tokens(config, mcp_tokens)
-    return mcp_tokens
-
 def wrap_mcp_authenticate_tool(tool: StructuredTool) -> StructuredTool:
     """为 MCP tool 包一层认证与错误处理逻辑。
     
@@ -460,40 +367,45 @@ async def load_mcp_tools(
         可直接使用的 MCP tools 列表
     """
     configurable = Configuration.from_runnable_config(config)
-    
-    # Step 1: 如需认证，先处理认证
-    if configurable.mcp_config and configurable.mcp_config.auth_required:
-        mcp_tokens = await fetch_tokens(config)
-    else:
-        mcp_tokens = None
-    
-    # Step 2: 校验配置是否完整可用
-    config_valid = (
-        configurable.mcp_config and 
-        configurable.mcp_config.url and 
-        configurable.mcp_config.tools and 
-        (mcp_tokens or not configurable.mcp_config.auth_required)
-    )
-    
-    if not config_valid:
+
+    # Step 1: 解析 server 列表（仅使用 mcp_servers）
+    configured_servers: list[MCPConfig] = []
+    if configurable.mcp_servers:
+        configured_servers = [server for server in configurable.mcp_servers if server]
+
+    if not configured_servers:
         return []
-    
-    # Step 3: 构建 MCP server 连接参数
-    server_url = configurable.mcp_config.url.rstrip("/") + "/mcp"
-    
-    # 若有 token，则附加认证请求头
-    auth_headers = None
-    if mcp_tokens:
-        auth_headers = {"Authorization": f"Bearer {mcp_tokens['access_token']}"}
-    
-    mcp_server_config = {
-        "server_1": {
-            "url": server_url,
-            "headers": auth_headers,
-            "transport": "streamable_http"
+
+    # Step 2: 构建 MultiServerMCPClient 配置
+    mcp_server_config = {}
+    allowed_tool_names: set[str] = set()
+
+    supabase_token = config.get("configurable", {}).get("x-supabase-access-token")
+    for idx, server in enumerate(configured_servers, start=1):
+        if not (server.url and server.tools):
+            continue
+
+        # 记录该 server 允许暴露的 tools 白名单
+        allowed_tool_names.update(server.tools)
+
+        auth_headers = None
+        if server.auth_required:
+            if not supabase_token:
+                continue
+            token_data = await get_mcp_access_token(supabase_token, server.url)
+            if not token_data:
+                continue
+            auth_headers = {"Authorization": f"Bearer {token_data['access_token']}"}
+
+        request_headers = auth_headers or server.headers
+        mcp_server_config[f"server_{idx}"] = {
+            "url": server.url.rstrip("/") + "/mcp",
+            "headers": request_headers,
+            "transport": "streamable_http",
         }
-    }
-    # TODO: OAP 支持 Multi-MCP Server 后，更新此处实现
+
+    if not mcp_server_config:
+        return []
     
     # Step 4: 从 MCP server 拉取 tools
     try:
@@ -505,6 +417,7 @@ async def load_mcp_tools(
     
     # Step 5: 过滤并配置 tools
     configured_tools = []
+    seen_mcp_tool_names: set[str] = set()
     for mcp_tool in available_mcp_tools:
         # 跳过名称冲突的 tool
         if mcp_tool.name in existing_tool_names:
@@ -512,14 +425,19 @@ async def load_mcp_tools(
                 f"MCP tool '{mcp_tool.name}' conflicts with existing tool name - skipping"
             )
             continue
-        
-        # 仅保留配置中显式声明的 tools
-        if mcp_tool.name not in set(configurable.mcp_config.tools):
+
+        # 跳过不同 MCP server 之间的重名 tool（保留第一个）
+        if mcp_tool.name in seen_mcp_tool_names:
             continue
-        
+
+        # 仅保留配置中显式声明的 tools
+        if mcp_tool.name not in allowed_tool_names:
+            continue
+
         # 包装认证逻辑后加入结果列表
         enhanced_tool = wrap_mcp_authenticate_tool(mcp_tool)
         configured_tools.append(enhanced_tool)
+        seen_mcp_tool_names.add(mcp_tool.name)
     
     return configured_tools
 
