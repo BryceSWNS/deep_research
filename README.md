@@ -50,20 +50,18 @@ uvx --refresh --from "langgraph-cli[inmem]" --with-editable . --python 3.11 lang
 
 在 `messages` 输入框里输入问题并点击 `Submit`。你也可以在 “Manage Assistants” 标签页中选择不同配置。
 
-### ⚙️ Configurations
+### ⚙️ 配置说明
 
 #### LLM :brain:
 
-Open Deep Research 通过 [init_chat_model() API](https://python.langchain.com/docs/how_to/chat_models_universal_init/) 支持多种 LLM provider。系统会在不同阶段使用不同模型。更详细的模型字段请查看 [configuration.py](https://github.com/langchain-ai/open_deep_research/blob/main/src/open_deep_research/configuration.py)。这些配置也可以在 LangGraph Studio UI 中修改。
+Open Deep Research 通过 `init_chat_model() API` 支持多种 LLM provider。系统会在不同阶段使用不同模型。更详细的模型字段请查看 `configuration.py`，这些配置也可以在 LangGraph Studio UI 中修改。
 
-- **Summarization**（默认：`openai:gpt-4.1-mini`）：总结 search API 返回的结果
-- **Research**（默认：`openai:gpt-4.1`）：驱动 research agent 执行检索
-- **Compression**（默认：`openai:gpt-4.1`）：压缩研究发现
-- **Final Report Model**（默认：`openai:gpt-4.1`）：撰写最终报告
+- **Summarization**（默认：`deepseek:deepseek-chat`）：总结 search API 返回的结果
+- **Research**（默认：`deepseek:deepseek-chat`）：调动 research agent 执行检索和研究
+- **Compression**（默认：`deepseek:deepseek-chat`）：压缩子研究结果
+- **Final Report Model**（默认：`deepseek:deepseek-reasoner`）：撰写最终报告
 
-> 注意：所选模型需要支持 [structured outputs](https://python.langchain.com/docs/integrations/chat/) 和 [tool calling](https://python.langchain.com/docs/how_to/tool_calling/)。
-
-> 注意：如果使用 OpenRouter，请参考[这份指南](https://github.com/langchain-ai/open_deep_research/issues/75#issuecomment-2811472408)；如果通过 Ollama 使用本地模型，请参考[这份配置说明](https://github.com/langchain-ai/open_deep_research/issues/65#issuecomment-2743586318)。
+> 注意：所选模型需要支持 structured outputs 和 tool calling
 
 #### Search API :mag:
 
@@ -71,7 +69,7 @@ Open Deep Research 支持多种 search tools。默认使用 [Tavily](https://www
 
 #### 其他
 
-更多可定制项请参考 [configuration.py](https://github.com/langchain-ai/open_deep_research/blob/main/src/open_deep_research/configuration.py) 中的字段配置。 
+更多可定制项请参考 `configuration.py` 中的字段配置。 
 
 ### 🚀 部署与使用
 
@@ -81,15 +79,13 @@ Open Deep Research 支持多种 search tools。默认使用 [Tavily](https://www
 
 #### 托管部署
 
-你可以轻松部署到 [LangGraph Platform](https://langchain-ai.github.io/langgraph/concepts/#deployment-options). 
+你可以选择部署到 [LangGraph Platform](https://langchain-ai.github.io/langgraph/concepts/#deployment-options). 
 
 #### Open Agent Platform
 
-Open Agent Platform（OAP）是一个可视化界面，使非技术用户也能构建和配置自己的 Agent。OAP 非常适合让用户为 Deep Researcher 配置不同的 MCP 工具和搜索 API，以匹配其具体需求和要解决的问题。
+Open Agent Platform（OAP）是一个可视化界面，非常适合让各类用户为自己的 Deep Researcher 配置不同的 MCP 工具和搜索 API 以匹配具体需求。
 
-我们已将 Open Deep Research 部署到 OAP 的公共演示实例上。你只需添加自己的 API Key，即可亲自体验 Deep Researcher。[可在此访问](https://oap.langchain.com)
-
-你也可以自行部署 OAP 实例，并将自己定制的 Agent（例如 Deep Researcher）发布给用户使用。
+如果需要部署 OAP 实例，可参考下面的内容。
 
 1. [Deploy Open Agent Platform](https://docs.oap.langchain.com/quickstart)
 2. [Add Deep Researcher to OAP](https://docs.oap.langchain.com/setup/agents)

@@ -1,4 +1,4 @@
-"""配置管理 for the Open Deep Research system."""
+"""Open Deep Research 的配置管理。"""
 
 import os
 from enum import Enum
@@ -9,7 +9,7 @@ from pydantic import BaseModel, Field
 
 
 class SearchAPI(Enum):
-    """Enumeration of available search API providers."""
+    """可用 search API provider 枚举。"""
     
     ANTHROPIC = "anthropic"
     OPENAI = "openai"
@@ -38,7 +38,7 @@ class MCPConfig(BaseModel):
 class Configuration(BaseModel):
     """Deep Research Agent 的主配置类"""
     
-    # 通用 Configuration
+    # 通用配置
     max_structured_output_retries: int = Field(
         default=3,
         metadata={
@@ -74,7 +74,7 @@ class Configuration(BaseModel):
             }
         }
     )
-    # 研究相关 Configuration
+    # 研究相关配置
     search_api: SearchAPI = Field(
         default=SearchAPI.TAVILY,
         metadata={
@@ -117,13 +117,13 @@ class Configuration(BaseModel):
             }
         }
     )
-    # 模型相关 Configuration
+    # 模型相关配置
     summarization_model: str = Field(
-        default="openai:gpt-4.1-mini",
+        default="deepseek:deepseek-chat",
         metadata={
             "x_oap_ui_config": {
                 "type": "text",
-                "default": "openai:gpt-4.1-mini",
+                "default": "deepseek:deepseek-chat",
                 "description": "用于对 Tavily 搜索结果进行总结的模型"
             }
         }
@@ -151,31 +151,31 @@ class Configuration(BaseModel):
         }
     )
     research_model: str = Field(
-        default="openai:gpt-4.1",
+        default="deepseek:deepseek-chat",
         metadata={
             "x_oap_ui_config": {
                 "type": "text",
-                "default": "openai:gpt-4.1",
+                "default": "deepseek:deepseek-chat",
                 "description": "用于开展研究的模型。注意：请确保所选的 Researcher Model 支持所选择的 search API"
             }
         }
     )
     research_model_max_tokens: int = Field(
-        default=10000,
+        default=8192,
         metadata={
             "x_oap_ui_config": {
                 "type": "number",
-                "default": 10000,
+                "default": 8192,
                 "description": "research model 允许生成的最大输出 token 数量"
             }
         }
     )
     compression_model: str = Field(
-        default="openai:gpt-4.1",
+        default="deepseek:deepseek-chat",
         metadata={
             "x_oap_ui_config": {
                 "type": "text",
-                "default": "openai:gpt-4.1",
+                "default": "deepseek:deepseek-chat",
                 "description": "用于压缩 sub-Agents 的 research findingss 的模型。注意：请确保所选的 Compression Model 支持所选择的 search API"
             }
         }
@@ -191,26 +191,26 @@ class Configuration(BaseModel):
         }
     )
     final_report_model: str = Field(
-        default="openai:gpt-4.1",
+        default="deepseek:deepseek-reasoner",
         metadata={
             "x_oap_ui_config": {
                 "type": "text",
-                "default": "openai:gpt-4.1",
+                "default": "deepseek:deepseek-reasoner",
                 "description": "基于所有研究 findings，撰写最终报告的模型"
             }
         }
     )
     final_report_model_max_tokens: int = Field(
-        default=10000,
+        default=8192,
         metadata={
             "x_oap_ui_config": {
                 "type": "number",
-                "default": 10000,
+                "default": 8192,
                 "description": "final report model 允许生成的最大输出 token 数量"
             }
         }
     )
-    # MCP 服务器 configuration
+    # MCP 服务器配置
     mcp_config: Optional[MCPConfig] = Field(
         default=None,
         optional=True,
@@ -246,6 +246,6 @@ class Configuration(BaseModel):
         return cls(**{k: v for k, v in values.items() if v is not None})
 
     class Config:
-        """Pydantic configuration."""
+        """Pydantic 配置。"""
         
         arbitrary_types_allowed = True

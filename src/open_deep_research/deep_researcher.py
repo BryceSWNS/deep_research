@@ -52,7 +52,7 @@ from open_deep_research.utils import (
     think_tool,
 )
 
-# Initialize a configurable model that we will use throughout the agent
+# 用 LangChain 的统一接口 init_chat_model(...) 创建可配置模型对象
 configurable_model = init_chat_model(
     configurable_fields=("model", "max_tokens", "api_key"),
 )
